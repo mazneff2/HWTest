@@ -1,6 +1,7 @@
 package ru.progwards.java1.SeaBattle.student1;
 
-import ru.progwards.java1.SeaBattle.system.SeaBattle;
+import ru.progwards.java1.SeaBattle.SeaBattle;
+import ru.progwards.java1.SeaBattle.SeaBattle.FireResult;
 
 public class SeaBattleAlg {
     // Тестовое поле создаётся конструктором
@@ -32,10 +33,9 @@ public class SeaBattleAlg {
     public void battleAlgorithm(SeaBattle seaBattle) {
         // пример алгоритма:
         // стрельба по всем квадратам поля полным перебором
-
-        for (int y = 0; y < seaBattle.sizeY; y++) {
-        	for (int x = 0; x < seaBattle.sizeX; x++) {
-                SeaBattle.FireResult fireResult = seaBattle.fire(x, y);
+        for (int y = 0; y < seaBattle.getSizeX(); y++) {
+        	for (int x = 0; x < seaBattle.getSizeY(); x++) {
+        		SeaBattle.FireResult fireResult = seaBattle.fire(x, y);
             }
         }
     }
