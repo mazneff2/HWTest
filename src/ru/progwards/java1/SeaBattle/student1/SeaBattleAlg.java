@@ -44,13 +44,13 @@ public class SeaBattleAlg {
 	public static boolean printField = false;
 	
 	void init(SeaBattle seaBattle) {
-	hits = 0;
     	this.seaBattle = seaBattle;
     	field = new char[seaBattle.getSizeX()][];
     	for (int x = 0; x < seaBattle.getSizeX(); x++) {
     		field[x] = new char[seaBattle.getSizeY()];
     		Arrays.fill(field[x], ' ');
     	}
+    	hits = 0;
 	}
 	
 	void print() {
