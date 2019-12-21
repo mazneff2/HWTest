@@ -41,7 +41,7 @@ public class SeaBattleAlg {
 	int direction;
 	int fireDirection;
 	Random random = new Random();
-	public static boolean printField = true;
+	public static boolean printField = false;
 	
 	void init(SeaBattle seaBattle) {
     	this.seaBattle = seaBattle;
