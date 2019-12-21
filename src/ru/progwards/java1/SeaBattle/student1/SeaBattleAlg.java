@@ -1,4 +1,4 @@
-package ru.progwards.java1.SeaBattle.vpupkin;
+package ru.progwards.java1.SeaBattle.student1;
 
 import java.util.Arrays;
 import java.util.Random;
