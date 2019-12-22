@@ -35,25 +35,25 @@ public class SeaBattleAlg {
 
 	private static final int HORISONTAL = 0b01;
 	private static final int VERTIKAL = 0b10;
+	public static boolean printField = false;
 	char[][] field;
 	SeaBattle seaBattle;
 	int hits;
 	int direction;
 	int fireDirection;
 	Random random = new Random();
-	public static boolean printField = false;
 	
-	void init(SeaBattle seaBattle) {
-    	this.seaBattle = seaBattle;
-    	field = new char[seaBattle.getSizeX()][];
-    	for (int x = 0; x < seaBattle.getSizeX(); x++) {
-    		field[x] = new char[seaBattle.getSizeY()];
-    		Arrays.fill(field[x], ' ');
-    	}
+	void init(SeaBattle seaBattle) {   
     	hits = 0;
+    	this.seaBattle = seaBattle;
+    	field = new char[seaBattle.getSizeX()][seaBattle.getSizeY()];
+    	for (int x = 0; x < seaBattle.getSizeX(); x++)
+    		Arrays.fill(field[x], ' ');
 	}
 	
 	void print() {
+		if (!printField)
+			return;
 		for (int y = 0; y < seaBattle.getSizeY(); y++) {
 			String str = "|";
 			for (int x = 0; x < seaBattle.getSizeX(); x++) {
@@ -64,23 +64,27 @@ public class SeaBattleAlg {
 		System.out.println("----------------------");
 	}
 	
-	void checkShip(int x, int y) {
-		if ((direction&HORISONTAL) != 0) {
+	void killShip(int x, int y) {
+		int i = 1;
+		while ((direction&HORISONTAL) != 0) {
 			fireDirection = HORISONTAL;
-			checkDirection(fire(x-1, y));
+			checkDirection(fire(x-i, y), 1);
 			if ((direction&HORISONTAL) != 0)
-				checkDirection(fire(x+1, y));
+				checkDirection(fire(x+i, y), 2);
+			i++;
 		}
-		if ((direction&VERTIKAL) != 0) {
+		i = 1;
+		while ((direction&VERTIKAL) != 0) {
 			fireDirection = VERTIKAL;
 			if ((direction&VERTIKAL) != 0)
-				checkDirection(fire(x, y-1));
+				checkDirection(fire(x, y-i), 1);
 			if ((direction&VERTIKAL) != 0)
-				checkDirection(fire(x, y+1));
+				checkDirection(fire(x, y+i), 2);
+			i++;
 		}
 	}
 	
-	void checkDirection(SeaBattle.FireResult result) {
+	void checkDirection(SeaBattle.FireResult result, int fire) {
 		switch(result) {
 			case DESTROYED :
 				direction = 0;
@@ -88,7 +92,9 @@ public class SeaBattleAlg {
 			case HIT:
 				direction = fireDirection;
 				break;
-			case MISS:;
+			case MISS:
+				if (fire == 2)
+					direction &= ~fireDirection;
 		}
 	}
 	
@@ -99,9 +105,7 @@ public class SeaBattleAlg {
 			field[x][y] = '*';
 	}
 	
-	void checkHit(SeaBattle.FireResult result) {
-		if (printField)
-			print();
+	void countHits(SeaBattle.FireResult result) {
 		if (result != SeaBattle.FireResult.MISS)
 			hits++;
 	}
@@ -121,7 +125,7 @@ public class SeaBattleAlg {
 		mark(x+1, y-1);
 		mark(x+1, y);
 		mark(x-1, y+1);
-		mark(x, y+1);
+		mark(x, y-1);
 	}
 	
 	void markDestroyed() {
@@ -134,23 +138,28 @@ public class SeaBattleAlg {
 	}
 	
 	SeaBattle.FireResult fire(int x, int y) {
-		if(x<0 || y<0 || x>=seaBattle.getSizeX() || y>=seaBattle.getSizeY() || hits >= 20)
+		if(x<0 || y<0 || x>=seaBattle.getSizeX() || y>=seaBattle.getSizeY() || 
+				hits >= 20 || field[x][y] != ' ')
 			return SeaBattle.FireResult.MISS;
-		if (field[x][y] == ' ') {
-			SeaBattle.FireResult result = seaBattle.fire(x, y);
-			markField(x, y, result);
-			checkHit(result);
-			if (result == SeaBattle.FireResult.HIT) {
-				direction = fireDirection;
-				checkShip(x, y);
-			}
-			else
-				if (result == SeaBattle.FireResult.DESTROYED)
-					markDestroyed();
 			
-			return result;
+		SeaBattle.FireResult result = seaBattle.fire(x, y);
+		markField(x, y, result);
+		countHits(result);
+		print();
+		if (result == SeaBattle.FireResult.DESTROYED)
+			markDestroyed();
+		
+		return result;
+	}
+	
+	SeaBattle.FireResult fireAndKill(int x, int y) {
+		fireDirection = VERTIKAL | HORISONTAL;
+		SeaBattle.FireResult result = fire(x, y);
+		if (result == SeaBattle.FireResult.HIT) {
+			direction = fireDirection;
+			killShip(x, y);
 		}
-		return SeaBattle.FireResult.MISS;
+		return result;
 	}
 
 	int getRandom() {
@@ -163,29 +172,23 @@ public class SeaBattleAlg {
 	void algorithm1() {
     	for (int y = 0; y < seaBattle.getSizeY(); y++) {
         	for (int x = 0; x < seaBattle.getSizeX(); x++) {
-        		fireDirection = VERTIKAL | HORISONTAL;
-        		fire(x, y);
+        		fireAndKill(x, y);
             }
         }
 	}
 
 	void algorithm2() {
-		while(hits < 20) {
-    		fireDirection = VERTIKAL | HORISONTAL;
-			fire(getRandom(), getRandom());
-		}
+		while(hits < 20)
+			fireAndKill(getRandom(), getRandom());
 	}
 	
 	void stepFire(int offset) {
     	for (int y = 0; y < seaBattle.getSizeY(); y++) {
-        	for (int x = y+offset; x < seaBattle.getSizeX(); x+=4) {
-        		fireDirection = VERTIKAL | HORISONTAL;
-        		fire(x, y);
-            }
-        	for (int x = y-offset; x >= 0; x-=4) {
-        		fireDirection = VERTIKAL | HORISONTAL;
-        		fire(x, y);
-            }
+        	for (int x = y+offset; x < seaBattle.getSizeX(); x+=4)
+        		fireAndKill(x, y);
+            
+        	for (int x = y-offset; x >= 0; x-=4)
+        		fireAndKill(x, y);
     	}
 	}
 	
@@ -222,7 +225,7 @@ public class SeaBattleAlg {
     // функция для отладки
     public static void main(String[] args) {
     	System.out.println("Sea battle");
-    	fullTest();
+    	oneTest();
     }
 }
 
