@@ -3,6 +3,8 @@ package ru.progwards.java1.SeaBattle.student1;
 import java.util.Arrays;
 import java.util.Random;
 
+import javax.security.auth.Destroyable;
+
 import ru.progwards.java1.SeaBattle.SeaBattle;
 import ru.progwards.java1.SeaBattle.SeaBattle.FireResult;
 
@@ -33,16 +35,16 @@ public class SeaBattleAlg {
     //         8|X|.|.|.|.|.|.|X|.|.|
     //         9|X|.|.|.|X|.|.|.|.|.|
 
-	private static final int HORISONTAL = 0b01;
-	private static final int VERTIKAL = 0b10;
-	public static boolean printField = false;
-	char[][] field;
-	SeaBattle seaBattle;
-	int hits;
-	int direction;
-	int fireDirection;
-	Random random = new Random();
+	private static final int MINUS = 0b01; // стреляем в уменьшение координаьы
+	private static final int PLUS = 0b10; // стреляем в увеличение координаты
 	
+	public static boolean printField = false; // печатать поле на каждом шаге
+	char[][] field; // поле боя. ' ' - пустая ячейка, '*' - выстрел, 'X' - попали в корабль, '.' - отметили, что нет смысла стрелять
+	SeaBattle seaBattle; // seaBattle, что бы не таскать его везде параметром
+	int hits; // общее количество попаданий
+	int direction; // направление стрельбы - PLUS | MINUS
+	
+    // процедура инициализации, используется вместо конструктора
 	void init(SeaBattle seaBattle) {   
     	hits = 0;
     	this.seaBattle = seaBattle;
@@ -51,8 +53,9 @@ public class SeaBattleAlg {
     		Arrays.fill(field[x], ' ');
 	}
 	
-	void print() {
-		if (!printField)
+	// печать поля для отладки алгоритмов
+	void print(boolean doPrint) {
+		if (!doPrint)
 			return;
 		for (int y = 0; y < seaBattle.getSizeY(); y++) {
 			String str = "|";
@@ -64,70 +67,87 @@ public class SeaBattleAlg {
 		System.out.println("----------------------");
 	}
 	
-	void killShip(int x, int y) {
+	// добить корабль горизонтально; возвращает true если корабль убит
+	boolean killHorisontal(int x, int y) {
 		int i = 1;
-		while ((direction&HORISONTAL) != 0) {
-			fireDirection = HORISONTAL;
-			checkDirection(fire(x-i, y), 1);
-			if ((direction&HORISONTAL) != 0)
-				checkDirection(fire(x+i, y), 2);
+		boolean destroyed = false;
+		direction = PLUS | MINUS;
+		do {
+			if ((direction&MINUS) != 0)
+				destroyed = checkHit(fire(x-i, y), MINUS);
+			if ((direction&PLUS) != 0)
+				destroyed = checkHit(fire(x+i, y), PLUS);
 			i++;
-		}
-		i = 1;
-		while ((direction&VERTIKAL) != 0) {
-			fireDirection = VERTIKAL;
-			if ((direction&VERTIKAL) != 0)
-				checkDirection(fire(x, y-i), 1);
-			if ((direction&VERTIKAL) != 0)
-				checkDirection(fire(x, y+i), 2);
-			i++;
-		}
+		} while(direction != 0);
+		return destroyed;
 	}
 	
-	void checkDirection(SeaBattle.FireResult result, int fire) {
+	// добить корабль вертикально; возвращает true если корабль убит
+	boolean killVertical(int x, int y) {
+		int i = 1;
+		boolean destroyed = false;
+		direction = PLUS | MINUS;
+		do {
+			if ((direction&MINUS) != 0)
+				destroyed = checkHit(fire(x, y-i), MINUS);
+			if ((direction&PLUS) != 0)
+				destroyed = checkHit(fire(x, y+i), PLUS);
+			i++;
+		} while(direction != 0);
+		return destroyed;
+	}
+	
+	// добить корабль, вызывается только после попадания
+	void killShip(int x, int y) {
+		boolean destroyed = killHorisontal(x, y);
+		if (!destroyed)
+			killVertical(x, y);
+	}
+	
+	// проверить попадание при добивании; возвращает true если корабль убит
+	boolean checkHit(SeaBattle.FireResult result, int fireDirection) {
 		switch(result) {
 			case DESTROYED :
 				direction = 0;
-				break;
+				return true;
 			case HIT:
-				direction = fireDirection;
-				break;
-			case MISS:
-				if (fire == 2)
-					direction &= ~fireDirection;
-		}
+				return false;
+			case MISS: 
+				direction &= ~fireDirection;
+				return false;
+			}
+		return false;
 	}
 	
-	void markField(int x, int y, SeaBattle.FireResult result) {
+	// пометить ячейку корабль или мимо
+	void markFire(int x, int y, SeaBattle.FireResult result) {
 		if (result != SeaBattle.FireResult.MISS)
 			field[x][y] = 'X';
 		else 
 			field[x][y] = '*';
 	}
-	
-	void countHits(SeaBattle.FireResult result) {
-		if (result != SeaBattle.FireResult.MISS)
-			hits++;
-	}
-	
-	void mark(int x, int y) {
+
+	// пометить ячейку как не не имеющую смысл для стрельбы
+	void markDot(int x, int y) {
 		if(x<0 || y<0 || x>=seaBattle.getSizeX() || y>=seaBattle.getSizeY())
 			return;
 		if (field[x][y] == ' ')
 			field[x][y] = '.';
 	}
 	
+	// пометить попадание в корабль "по кругу"
 	void markHit(int x, int y) {
-		mark(x-1, y-1);
-		mark(x-1, y);
-		mark(x+1, y+1);
-		mark(x, y+1);
-		mark(x+1, y-1);
-		mark(x+1, y);
-		mark(x-1, y+1);
-		mark(x, y-1);
+		markDot(x-1, y-1);
+		markDot(x-1, y);
+		markDot(x-1, y+1);
+		markDot(x+1, y-1);
+		markDot(x+1, y);
+		markDot(x+1, y+1);
+		markDot(x, y-1);
+		markDot(x, y+1);
 	}
 	
+	// пометить вокруг убитых кораблей
 	void markDestroyed() {
     	for (int y = 0; y < seaBattle.getSizeY(); y++) {
         	for (int x = 0; x < seaBattle.getSizeX(); x++) {
@@ -137,31 +157,38 @@ public class SeaBattleAlg {
     	}
 	}
 	
+	// увеличить счетчик попаданий
+	void countHits(SeaBattle.FireResult result) {
+		if (result != SeaBattle.FireResult.MISS)
+			hits++;
+	}
+	
+	// "интеллектуальный" выстрел - проверяет попадание в границы поля и что имеет смысл стрелять в ячейку
 	SeaBattle.FireResult fire(int x, int y) {
 		if(x<0 || y<0 || x>=seaBattle.getSizeX() || y>=seaBattle.getSizeY() || 
 				hits >= 20 || field[x][y] != ' ')
 			return SeaBattle.FireResult.MISS;
 			
 		SeaBattle.FireResult result = seaBattle.fire(x, y);
-		markField(x, y, result);
+		markFire(x, y, result);
 		countHits(result);
-		print();
 		if (result == SeaBattle.FireResult.DESTROYED)
 			markDestroyed();
 		
+		print(printField);
 		return result;
 	}
 	
+	// выстрел с добиванием корабля. Используется из основного алгоритма для избегания рекурсии
 	SeaBattle.FireResult fireAndKill(int x, int y) {
-		fireDirection = VERTIKAL | HORISONTAL;
 		SeaBattle.FireResult result = fire(x, y);
 		if (result == SeaBattle.FireResult.HIT) {
-			direction = fireDirection;
 			killShip(x, y);
 		}
 		return result;
 	}
 
+	Random random = new Random(); 
 	int getRandom() {
 		double d = random.nextDouble();
 		return (int)Math.floor(d*10);
@@ -209,7 +236,8 @@ public class SeaBattleAlg {
     	double result = 0;
     	for(int i=0; i<1000; i++) {
     		SeaBattle seaBattle = new SeaBattle();
-    		new SeaBattleAlg().battleAlgorithm(seaBattle);
+    		SeaBattleAlg alg = new SeaBattleAlg();
+    		alg.battleAlgorithm(seaBattle);
     		result += seaBattle.getResult();
     	}
     	System.out.println(result/1000);
@@ -225,7 +253,7 @@ public class SeaBattleAlg {
     // функция для отладки
     public static void main(String[] args) {
     	System.out.println("Sea battle");
-    	oneTest();
+    	fullTest(); 
     }
 }
 
