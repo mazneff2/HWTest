@@ -9,9 +9,9 @@ public class Task1 {
         System.out.println(a);
         System.out.println(b);
 
-        //System.out.print(a);
-        //System.out.print(с);
-        //System.out.println(b);
+        System.out.print(a);
+        System.out.print(с);
+        System.out.println(b);
 
         System.out.print(b);
         System.out.print(с);
