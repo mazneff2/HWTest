@@ -2,7 +2,7 @@ package ru.progwards.java1.lessons.helloworld;
 
 public class Task1 {
     public static void main(String[] args) {
-        String a = "Хорошо идут дела--";
+        String a = "Хорошо идут дела";
         String b = "Изучаю Java я!";
         String с = " ";
 
