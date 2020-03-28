@@ -40,28 +40,12 @@ public class SeaBattleAlg {
         }
     }
 
-    static void testFull() {
-        System.out.println("Sea battle");
-        double result = 0;
-        for (int i=0; i<1000; i++) {
-            SeaBattle seaBattle = new SeaBattle();
-            new SeaBattleAlg().battleAlgorithm(seaBattle);
-            result += seaBattle.getResult();
-        }
-        System.out.println(result/1000);
-    }
-
-
-    static void testOne() {
+    // функция для отладки
+    public static void main(String[] args) {
         System.out.println("Sea battle");
         SeaBattle seaBattle = new SeaBattle(true);
         new SeaBattleAlg().battleAlgorithm(seaBattle);
         System.out.println(seaBattle.getResult());
-    }
-
-    // функция для отладки
-    public static void main(String[] args) {
-        testFull();
     }
 }
 
